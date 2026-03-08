@@ -124,6 +124,16 @@ function toggleGallery() {
     }
 }
 
+// Open certificate by image element ID
+function openCert(imgId) {
+    const img = document.getElementById(imgId);
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    lightboxImg.src = img.src;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
 function openLightbox(item) {
     const img = item.querySelector('img');
     const lightbox = document.getElementById('lightbox');
