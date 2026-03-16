@@ -1,22 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- Navigation & Mobile Menu ---
-    const hamburger = document.querySelector('.hamburger');
+    // The menu pill acts as the hamburger toggle on mobile
+    const menuPill = document.querySelector('.menu-pill');
     const navLinks = document.querySelector('.nav-links');
     const navItems = document.querySelectorAll('.nav-link');
     const navbar = document.querySelector('.navbar');
 
-    // Toggle menu
-    hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        navLinks.classList.toggle('active');
-    });
+    if (menuPill) {
+        menuPill.addEventListener('click', () => {
+            menuPill.classList.toggle('active');
+            navLinks.classList.toggle('active');
+            // Toggle bars animation
+            const bars = menuPill.querySelectorAll('.bar');
+            if (menuPill.classList.contains('active')) {
+                bars[0] && (bars[0].style.transform = 'translateY(6px) rotate(45deg)');
+                bars[1] && (bars[1].style.transform = 'translateY(-1px) rotate(-45deg)');
+            } else {
+                bars[0] && (bars[0].style.transform = '');
+                bars[1] && (bars[1].style.transform = '');
+            }
+        });
+    }
 
     // Close menu when clicking a link
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            hamburger.classList.remove('active');
-            navLinks.classList.remove('active');
+            menuPill && menuPill.classList.remove('active');
+            navLinks && navLinks.classList.remove('active');
+            const bars = menuPill ? menuPill.querySelectorAll('.bar') : [];
+            bars[0] && (bars[0].style.transform = '');
+            bars[1] && (bars[1].style.transform = '');
         });
     });
 
@@ -33,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const typedTextSpan = document.querySelector(".typed-text");
     const cursorSpan = document.querySelector(".cursor");
 
-    const textArray = ["AI Enthusiast", "UI/UX Designer", "Data Science Intern", "Problem Solver"];
+    const textArray = ["AI Enthusiast.", "UI/UX Designer.", "Data Scientist.", "Problem Solver."];
     const typingDelay = 100;
     const erasingDelay = 50;
-    const newTextDelay = 2000; // Delay between current and next text
+    const newTextDelay = 2000;
     let textArrayIndex = 0;
     let charIndex = 0;
 
@@ -66,51 +80,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Start typing effect
     if (textArray.length) setTimeout(type, newTextDelay + 250);
 
     // --- Scroll Animations (Intersection Observer) ---
     const revealElements = document.querySelectorAll('.reveal, .reveal-up, .reveal-left, .reveal-right');
 
     const revealOptions = {
-        threshold: 0.15,
+        threshold: 0.12,
         rootMargin: "0px 0px -50px 0px"
     };
 
     const revealOnScroll = new IntersectionObserver(function (entries, observer) {
         entries.forEach(entry => {
-            if (!entry.isIntersecting) {
-                return;
-            } else {
-                entry.target.classList.add('active');
+            if (!entry.isIntersecting) return;
 
-                // If it's the skills section, trigger the progress bar animation
-                if (entry.target.classList.contains('skills-grid') || entry.target.closest('.skills-grid')) {
-                    const progressBars = entry.target.querySelectorAll('.progress');
-                    progressBars.forEach(bar => {
-                        const targetWidth = bar.parentElement.previousElementSibling.textContent.includes('Python') ? '85%' :
-                            bar.parentElement.previousElementSibling.textContent.includes('Java') ? '80%' :
-                                bar.parentElement.previousElementSibling.textContent.includes('HTML') ? '90%' :
-                                    bar.parentElement.previousElementSibling.textContent.includes('Figma') ? '85%' :
-                                        bar.parentElement.previousElementSibling.textContent.includes('UX') ? '80%' :
-                                            bar.parentElement.previousElementSibling.textContent.includes('Photoshop') ? '75%' :
-                                                bar.parentElement.previousElementSibling.textContent.includes('Data') ? '80%' :
-                                                    bar.parentElement.previousElementSibling.textContent.includes('Problem') ? '90%' : '70%';
-                        bar.style.width = targetWidth; // Could optionally read width from inline or dataset
-                    });
-                }
+            entry.target.classList.add('active');
 
-                observer.unobserve(entry.target);
+            // Animate progress bars when skills section enters view
+            if (entry.target.classList.contains('skills-grid') ||
+                entry.target.closest('.skills-grid')) {
+                const progressBars = entry.target.querySelectorAll('.progress');
+                progressBars.forEach(bar => {
+                    const width = bar.style.width || '70%';
+                    bar.style.width = '0';
+                    setTimeout(() => { bar.style.width = width; }, 100);
+                });
             }
+
+            observer.unobserve(entry.target);
         });
     }, revealOptions);
 
-    revealElements.forEach(el => {
-        revealOnScroll.observe(el);
-    });
+    revealElements.forEach(el => revealOnScroll.observe(el));
+
+    // --- Stats counter animation ---
+    const statNumbers = document.querySelectorAll('.stat-number');
+    const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                statsObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    statNumbers.forEach(el => statsObserver.observe(el));
+
+    function animateCounter(el) {
+        const rawText = el.textContent.trim();
+        const numText = rawText.replace(/[^0-9]/g, '');
+        const suffix = rawText.replace(/[0-9]/g, '');
+        const target = parseInt(numText) || 0;
+        if (target === 0) return;
+
+        let start = 0;
+        const duration = 1200;
+        const step = Math.ceil(target / (duration / 16));
+
+        const timer = setInterval(() => {
+            start += step;
+            if (start >= target) {
+                el.textContent = target + suffix;
+                clearInterval(timer);
+            } else {
+                el.textContent = start + suffix;
+            }
+        }, 16);
+    }
 });
 
-// --- Lightbox for Graphics Gallery ---
+// --- Gallery Toggle ---
 function toggleGallery() {
     const wrapper = document.getElementById('gallery-wrapper');
     const btn = document.getElementById('gallery-toggle-btn');
@@ -124,7 +163,7 @@ function toggleGallery() {
     }
 }
 
-// Open certificate by image element ID
+// --- Lightbox ---
 function openCert(imgId) {
     const img = document.getElementById(imgId);
     const lightbox = document.getElementById('lightbox');
@@ -138,7 +177,6 @@ function openLightbox(item) {
     const img = item.querySelector('img');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    // Use full resolution version
     const src = img.src.replace('sz=w600', 'sz=w1600');
     lightboxImg.src = src;
     lightbox.classList.add('active');
@@ -151,7 +189,6 @@ function closeLightbox() {
     document.body.style.overflow = '';
 }
 
-// Close lightbox with Escape key
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLightbox();
 });
