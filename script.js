@@ -1,7 +1,10 @@
+/* ═══════════════════════════════════════════════════
+   PORTFOLIO SCRIPT — GRANGER-STYLE ANIMATIONS
+═══════════════════════════════════════════════════ */
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Navigation & Mobile Menu ---
-    // The menu pill acts as the hamburger toggle on mobile
+    // ─── NAVIGATION ──────────────────────────────────
     const menuPill = document.querySelector('.menu-pill');
     const navLinks = document.querySelector('.nav-links');
     const navItems = document.querySelectorAll('.nav-link');
@@ -11,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         menuPill.addEventListener('click', () => {
             menuPill.classList.toggle('active');
             navLinks.classList.toggle('active');
-            // Toggle bars animation
             const bars = menuPill.querySelectorAll('.bar');
             if (menuPill.classList.contains('active')) {
                 bars[0] && (bars[0].style.transform = 'translateY(6px) rotate(45deg)');
@@ -23,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close menu when clicking a link
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             menuPill && menuPill.classList.remove('active');
@@ -34,87 +35,124 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Navbar scroll effect
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
+        navbar.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
 
-    // --- Typing Effect ---
-    const typedTextSpan = document.querySelector(".typed-text");
-    const cursorSpan = document.querySelector(".cursor");
-
-    const textArray = ["AI Enthusiast.", "UI/UX Designer.", "Data Scientist.", "Problem Solver."];
+    // ─── TYPING EFFECT ────────────────────────────────
+    const typedTextSpan = document.querySelector('.typed-text');
+    const cursorSpan = document.querySelector('.cursor');
+    const textArray = ['AI Enthusiast.', 'UI/UX Designer.', 'Data Scientist.', 'Problem Solver.'];
     const typingDelay = 100;
     const erasingDelay = 50;
     const newTextDelay = 2000;
-    let textArrayIndex = 0;
-    let charIndex = 0;
+    let textIdx = 0, charIdx = 0;
 
     function type() {
-        if (charIndex < textArray[textArrayIndex].length) {
-            if (!cursorSpan.classList.contains("typing")) cursorSpan.classList.add("typing");
-            typedTextSpan.textContent += textArray[textArrayIndex].charAt(charIndex);
-            charIndex++;
+        if (charIdx < textArray[textIdx].length) {
+            cursorSpan.classList.add('typing');
+            typedTextSpan.textContent += textArray[textIdx].charAt(charIdx++);
             setTimeout(type, typingDelay);
         } else {
-            cursorSpan.classList.remove("typing");
+            cursorSpan.classList.remove('typing');
             setTimeout(erase, newTextDelay);
         }
     }
-
     function erase() {
-        if (charIndex > 0) {
-            if (!cursorSpan.classList.contains("typing")) cursorSpan.classList.add("typing");
-            typedTextSpan.textContent = textArray[textArrayIndex].substring(0, charIndex - 1);
-            charIndex--;
+        if (charIdx > 0) {
+            cursorSpan.classList.add('typing');
+            typedTextSpan.textContent = textArray[textIdx].substring(0, --charIdx);
             setTimeout(erase, erasingDelay);
         } else {
-            cursorSpan.classList.remove("typing");
-            textArrayIndex++;
-            if (textArrayIndex >= textArray.length) textArrayIndex = 0;
+            cursorSpan.classList.remove('typing');
+            textIdx = (textIdx + 1) % textArray.length;
             setTimeout(type, typingDelay + 1100);
         }
     }
-
     if (textArray.length) setTimeout(type, newTextDelay + 250);
 
-    // --- Scroll Animations (Intersection Observer) ---
-    const revealElements = document.querySelectorAll('.reveal, .reveal-up, .reveal-left, .reveal-right');
+    // ─── SECTION TITLE REVEAL ─────────────────────────
+    // Wraps section title text in .title-line > span for slide-up
+    document.querySelectorAll('.section-title').forEach(title => {
+        // Already has HTML structure (My <span>Stack</span>) — wrap the whole thing
+        const raw = title.innerHTML;
+        title.innerHTML = `<span class="title-line"><span>${raw}</span></span>`;
+    });
 
-    const revealOptions = {
-        threshold: 0.12,
-        rootMargin: "0px 0px -50px 0px"
-    };
+    // ─── BRACKET LABELS OBSERVER ──────────────────────
+    const labelObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('label-visible');
+                labelObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.3 });
 
-    const revealOnScroll = new IntersectionObserver(function (entries, observer) {
+    document.querySelectorAll('.bracket-label').forEach(el => labelObserver.observe(el));
+
+    // ─── SECTION TITLE REVEAL OBSERVER ───────────────
+    const titleObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // small delay so bracket label fires first
+                setTimeout(() => {
+                    entry.target.classList.add('title-revealed');
+                }, 120);
+                titleObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.section-title').forEach(el => titleObserver.observe(el));
+
+    // ─── STAGGERED BENTO CARDS ────────────────────────
+    const staggerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Stagger all .stagger-child siblings in the same parent
+                const parent = entry.target.closest(
+                    '.skills-grid, .project-grid, .certs-grid, .education-grid, .stats-grid, .gallery-grid'
+                );
+                if (parent) {
+                    const children = parent.querySelectorAll('.stagger-child');
+                    children.forEach((child, i) => {
+                        setTimeout(() => child.classList.add('stagger-visible'), i * 80);
+                    });
+                    staggerObserver.unobserve(entry.target);
+                } else {
+                    entry.target.classList.add('stagger-visible');
+                    staggerObserver.unobserve(entry.target);
+                }
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.stagger-child').forEach(el => staggerObserver.observe(el));
+
+    // ─── GENERIC REVEAL ANIMATIONS ────────────────────
+    const revealObserver = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
-
             entry.target.classList.add('active');
 
-            // Animate progress bars when skills section enters view
-            if (entry.target.classList.contains('skills-grid') ||
-                entry.target.closest('.skills-grid')) {
-                const progressBars = entry.target.querySelectorAll('.progress');
-                progressBars.forEach(bar => {
-                    const width = bar.style.width || '70%';
-                    bar.style.width = '0';
-                    setTimeout(() => { bar.style.width = width; }, 100);
-                });
-            }
+            // Trigger progress bars inside skills reveal
+            entry.target.querySelectorAll('.progress').forEach(bar => {
+                const w = bar.style.width || '70%';
+                bar.style.width = '0';
+                setTimeout(() => { bar.style.width = w; }, 150);
+            });
 
-            observer.unobserve(entry.target);
+            obs.unobserve(entry.target);
         });
-    }, revealOptions);
+    }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
 
-    revealElements.forEach(el => revealOnScroll.observe(el));
+    document.querySelectorAll('.reveal, .reveal-up, .reveal-left, .reveal-right').forEach(el =>
+        revealObserver.observe(el)
+    );
 
-    // --- Stats counter animation ---
-    const statNumbers = document.querySelectorAll('.stat-number');
+    // ─── STATS COUNTER ANIMATION ──────────────────────
+    const statEls = document.querySelectorAll('.stat-number');
     const statsObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -124,32 +162,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, { threshold: 0.5 });
 
-    statNumbers.forEach(el => statsObserver.observe(el));
+    statEls.forEach(el => statsObserver.observe(el));
 
     function animateCounter(el) {
-        const rawText = el.textContent.trim();
-        const numText = rawText.replace(/[^0-9]/g, '');
-        const suffix = rawText.replace(/[0-9]/g, '');
-        const target = parseInt(numText) || 0;
-        if (target === 0) return;
+        const raw = el.textContent.trim();
+        const num = parseInt(raw.replace(/[^0-9]/g, '')) || 0;
+        const suffix = raw.replace(/[0-9]/g, '');
+        if (!num) return;
 
-        let start = 0;
-        const duration = 1200;
-        const step = Math.ceil(target / (duration / 16));
+        let current = 0;
+        const step = Math.max(1, Math.ceil(num / 40));
 
-        const timer = setInterval(() => {
-            start += step;
-            if (start >= target) {
-                el.textContent = target + suffix;
-                clearInterval(timer);
-            } else {
-                el.textContent = start + suffix;
-            }
-        }, 16);
+        const tick = () => {
+            current = Math.min(current + step, num);
+            el.textContent = current + suffix;
+            el.classList.add('counting');
+            setTimeout(() => el.classList.remove('counting'), 80);
+            if (current < num) setTimeout(tick, 30);
+        };
+        setTimeout(tick, 200);
     }
+
+    // ─── HERO PARALLAX ────────────────────────────────
+    const parallaxEl = document.querySelector('.hero-parallax');
+    if (parallaxEl) {
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY;
+            if (y < window.innerHeight) {
+                parallaxEl.style.transform = `translateY(${y * 0.12}px)`;
+            }
+        }, { passive: true });
+    }
+
+    // ─── SMOOTH SCROLL (for anchor nav links) ─────────
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', e => {
+            const target = document.querySelector(anchor.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
 });
 
-// --- Gallery Toggle ---
+// ─── GALLERY TOGGLE ──────────────────────────────────
 function toggleGallery() {
     const wrapper = document.getElementById('gallery-wrapper');
     const btn = document.getElementById('gallery-toggle-btn');
@@ -163,7 +220,7 @@ function toggleGallery() {
     }
 }
 
-// --- Lightbox ---
+// ─── LIGHTBOX ────────────────────────────────────────
 function openCert(imgId) {
     const img = document.getElementById(imgId);
     const lightbox = document.getElementById('lightbox');
@@ -177,18 +234,14 @@ function openLightbox(item) {
     const img = item.querySelector('img');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    const src = img.src.replace('sz=w600', 'sz=w1600');
-    lightboxImg.src = src;
+    lightboxImg.src = img.src.replace('sz=w600', 'sz=w1600');
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
-    const lightbox = document.getElementById('lightbox');
-    lightbox.classList.remove('active');
+    document.getElementById('lightbox').classList.remove('active');
     document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeLightbox();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
